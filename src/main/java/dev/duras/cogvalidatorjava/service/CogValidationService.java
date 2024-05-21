@@ -59,7 +59,7 @@ public class CogValidationService {
         Band mainBand = ds.GetRasterBand(1);
         int ovrCount = mainBand.GetOverviewCount();
         ArrayList<String> fileList = new ArrayList<>(ds.GetFileList());
-        if (fileList != null && !fileList.isEmpty()) {
+        if (!fileList.isEmpty()) {
             for (String file : fileList) {
                 if (file.endsWith(".ovr")) {
                     errors.add("Overviews found in external .ovr file. They should be internal.");
