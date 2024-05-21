@@ -58,7 +58,7 @@ public class CogValidationService {
     private void validate(Dataset ds, List<String> errors, List<String> warnings, String filePath) throws IOException {
         Band mainBand = ds.GetRasterBand(1);
         int ovrCount = mainBand.GetOverviewCount();
-        ArrayList<String> fileList = new ArrayList(ds.GetFileList());
+        ArrayList<String> fileList = new ArrayList<>(ds.GetFileList());
         if (fileList != null && !fileList.isEmpty()) {
             for (String file : fileList) {
                 if (file.endsWith(".ovr")) {
