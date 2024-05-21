@@ -3,7 +3,7 @@ package dev.duras.cogvalidatorjava.service;
 import org.gdal.gdal.Band;
 import org.gdal.gdal.Dataset;
 import org.gdal.gdal.gdal;
-import org.gdal.gdalconst.gdalconst;
+import org.gdal.gdalconst.gdalconstConstants;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -11,7 +11,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class CogValidationService {
@@ -27,24 +28,24 @@ public class CogValidationService {
             throw new IOException("The file is not a GeoTIFF");
         }
 
-        int[] errors = new int[1];
-        int[] warnings = new int[1];
+        List<String> errors = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         validate(ds, errors, warnings, filePath);
 
         StringBuilder result = new StringBuilder();
-        if (warnings[0] > 0) {
+        if (!warnings.isEmpty()) {
             result.append("The following warnings were found:\n");
-            for (int i = 0; i < warnings[0]; i++) {
-                result.append(" - Warning ").append(i).append("\n");
+            for (String warning : warnings) {
+                result.append(" - ").append(warning).append("\n");
             }
             result.append("\n");
         }
-        if (errors[0] > 0) {
+        if (!errors.isEmpty()) {
             result.append(filePath).append(" is NOT a valid cloud optimized GeoTIFF.\n");
             result.append("The following errors were found:\n");
-            for (int i = 0; i < errors[0]; i++) {
-                result.append(" - Error ").append(i).append("\n");
+            for (String error : errors) {
+                result.append(" - ").append(error).append("\n");
             }
             result.append("\n");
         } else {
@@ -53,14 +54,14 @@ public class CogValidationService {
         return result.toString();
     }
 
-    private void validate(Dataset ds, int[] errors, int[] warnings, String filePath) throws IOException {
+    private void validate(Dataset ds, List<String> errors, List<String> warnings, String filePath) throws IOException {
         Band mainBand = ds.GetRasterBand(1);
         int ovrCount = mainBand.GetOverviewCount();
-        Vector<String> filelist = ds.GetFileList();
-        if (filelist != null && !filelist.isEmpty()) {
-            for (String file : filelist) {
+        ArrayList<String> fileList = new ArrayList(ds.GetFileList());
+        if (fileList != null && !fileList.isEmpty()) {
+            for (String file : fileList) {
                 if (file.endsWith(".ovr")) {
-                    errors[0]++;
+                    errors.add("Overviews found in external .ovr file. They should be internal.");
                 }
             }
         }
@@ -69,30 +70,30 @@ public class CogValidationService {
             int[] blockSize = new int[2];
             mainBand.GetBlockSize(blockSize, new int[1]);
             if (blockSize[0] == mainBand.getXSize() && blockSize[0] > 1024) {
-                errors[0]++;
+                errors.add("Tile size exceeds the image width.");
             }
             if (ovrCount == 0) {
-                warnings[0]++;
+                warnings.add("No overviews found for large image.");
             }
         }
 
         try (RandomAccessFile file = new RandomAccessFile(filePath, "r")) {
             FileChannel channel = file.getChannel();
             fullCheckBand(channel, "Main resolution image", mainBand, errors);
-            if (mainBand.GetMaskFlags() == gdalconst.GMF_PER_DATASET) {
+            if (mainBand.GetMaskFlags() == gdalconstConstants.GMF_PER_DATASET) {
                 fullCheckBand(channel, "Mask band of main resolution image", mainBand.GetMaskBand(), errors);
             }
             for (int i = 0; i < ovrCount; i++) {
                 Band ovrBand = ds.GetRasterBand(1).GetOverview(i);
                 fullCheckBand(channel, "Overview " + i, ovrBand, errors);
-                if (ovrBand.GetMaskFlags() == gdalconst.GMF_PER_DATASET) {
+                if (ovrBand.GetMaskFlags() == gdalconstConstants.GMF_PER_DATASET) {
                     fullCheckBand(channel, "Mask band of overview " + i, ovrBand.GetMaskBand(), errors);
                 }
             }
         }
     }
 
-    private void fullCheckBand(FileChannel channel, String bandName, Band band, int[] errors) throws IOException {
+    private void fullCheckBand(FileChannel channel, String bandName, Band band, List<String> errors) throws IOException {
         int[] blockXSize = new int[1];
         int[] blockYSize = new int[1];
         band.GetBlockSize(blockXSize, blockYSize);
@@ -109,7 +110,7 @@ public class CogValidationService {
 
                 if (offset > 0) {
                     if (offset < lastOffset) {
-                        errors[0]++;
+                        errors.add(bandName + " block (" + x + ", " + y + ") offset is less than previous block.");
                     }
 
                     // Check leader size
@@ -119,7 +120,7 @@ public class CogValidationService {
                         buffer.flip();
                         int leaderSize = buffer.getInt();
                         if (leaderSize != byteCount) {
-                            errors[0]++;
+                            errors.add(bandName + " block (" + x + ", " + y + ") leader size (" + leaderSize + ") does not match byte count (" + byteCount + ").");
                         }
                     }
 
@@ -131,7 +132,7 @@ public class CogValidationService {
                         int trailerBytes1 = buffer.getInt();
                         int trailerBytes2 = buffer.getInt();
                         if (trailerBytes1 != trailerBytes2) {
-                            errors[0]++;
+                            errors.add(bandName + " block (" + x + ", " + y + ") trailer bytes do not match.");
                         }
                     }
                 }

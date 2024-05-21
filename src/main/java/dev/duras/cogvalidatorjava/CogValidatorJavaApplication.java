@@ -28,8 +28,10 @@ public class CogValidatorJavaApplication {
             try {
                 String result = validationService.validateGeoTIFF(filePath);
                 System.out.println(result);
+                System.exit(1);
             } catch (IOException e) {
                 System.err.println("Error validating Cloud Optimized GeoTIFF: " + e.getMessage());
+                System.exit(0);
             }
         };
     }
