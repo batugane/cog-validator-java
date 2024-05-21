@@ -17,6 +17,7 @@ import java.util.List;
 @Service
 public class CogValidationService {
 
+    //Check if a file is a (Geo)TIFF with cloud optimized compatible structure.
     public String validateGeoTIFF(String filePath) throws IOException {
         gdal.AllRegister();
         Dataset ds = gdal.Open(filePath);
