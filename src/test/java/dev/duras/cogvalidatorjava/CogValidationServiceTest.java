@@ -1,5 +1,6 @@
 package dev.duras.cogvalidatorjava;
 
+import dev.duras.cogvalidatorjava.exception.ValidateCloudOptimizedGeoTIFFException;
 import dev.duras.cogvalidatorjava.service.CogValidationService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class CogValidationServiceTest {
     }
 
     @Test
-    void testValidateGeoTIFF_ValidFile() throws IOException {
+    void testValidateGeoTIFF_ValidFile() throws ValidateCloudOptimizedGeoTIFFException, IOException {
 
         String result = validationService.validateGeoTIFF("src/test/resources/london_jpeg75_cog.tif");
 
@@ -29,7 +30,7 @@ class CogValidationServiceTest {
     }
 
     @Test
-    void testValidateGeoTIFF_InvalidFile() throws IOException {
+    void testValidateGeoTIFF_InvalidFile() throws ValidateCloudOptimizedGeoTIFFException, IOException {
 
         String result = validationService.validateGeoTIFF("src/test/resources/f41078e1.tif");
 

@@ -1,5 +1,6 @@
 package dev.duras.cogvalidatorjava.service;
 
+import dev.duras.cogvalidatorjava.exception.ValidateCloudOptimizedGeoTIFFException;
 import org.gdal.gdal.Band;
 import org.gdal.gdal.Dataset;
 import org.gdal.gdal.gdal;
@@ -20,15 +21,15 @@ import static dev.duras.cogvalidatorjava.util.Constants.*;
 public class CogValidationService {
 
     // Check if a file is a (Geo)TIFF with cloud optimized compatible structure.
-    public String validateGeoTIFF(String filePath) throws IOException {
+    public String validateGeoTIFF(String filePath) throws IOException, ValidateCloudOptimizedGeoTIFFException {
         gdal.AllRegister();
         Dataset ds = gdal.Open(filePath);
         if (ds == null) {
-            throw new IOException(ERROR_INVALID_FILE + gdal.GetLastErrorMsg());
+            throw new ValidateCloudOptimizedGeoTIFFException(ERROR_INVALID_FILE + gdal.GetLastErrorMsg());
         }
 
         if (!ds.GetDriver().getShortName().equals("GTiff")) {
-            throw new IOException(ERROR_NOT_GEOTIFF);
+            throw new ValidateCloudOptimizedGeoTIFFException(ERROR_NOT_GEOTIFF);
         }
 
         List<String> errors = new ArrayList<>();
